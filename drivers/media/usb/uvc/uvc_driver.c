@@ -1897,6 +1897,8 @@ static void uvc_unregister_video(struct uvc_device *dev)
 		video_unregister_device(&stream->meta.vdev);
 
 		uvc_debugfs_cleanup_stream(stream);
+
+		vb2_queue_release(&stream->queue.queue);
 	}
 
 	if (dev->int_ep)
