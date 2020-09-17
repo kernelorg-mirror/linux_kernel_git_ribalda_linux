@@ -37,14 +37,20 @@ static int uvc_pm_get(struct uvc_streaming *stream)
 	if (ret)
 		return ret;
 
-	if (!stream->dev->int_ep)
-		return 0;
-
 	mutex_lock(&stream->dev->lock);
+
+	if (!video_is_registered(&stream->vdev))
+		goto done;
+
+	if (!stream->dev->int_ep)
+		goto done;
+
 	if (!stream->dev->users)
 		ret = uvc_status_start(stream->dev, GFP_KERNEL);
 	if (!ret)
 		stream->dev->users++;
+
+done:
 	mutex_unlock(&stream->dev->lock);
 
 	if (ret)
