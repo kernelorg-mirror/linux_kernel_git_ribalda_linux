@@ -501,6 +501,16 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
 		return;
 
 	/*
+	 * Some devices make a borderline interpreation of the UVC 1.5 standard
+	 * and the packets with no data contain undefined timestamps. Ignore
+	 * such packages to avoid interfering with the clock interpolation
+	 * algorithm.
+	 */
+	if (stream->dev->quirks & UVC_QUIRK_IGNORE_EMPTY_TS &&
+	    len == header_size)
+		return;
+
+	/*
 	 * Extract the timestamps:
 	 *
 	 * - store the frame PTS in the buffer structure
