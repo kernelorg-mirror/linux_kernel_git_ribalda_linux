@@ -901,6 +901,15 @@ int __video_register_device(struct video_device *vdev,
 	if (WARN_ON(type != VFL_TYPE_SUBDEV && !vdev->device_caps))
 		return -EINVAL;
 
+	/* Add Meta: to metadata device names */
+	if (vdev->device_caps &
+	    (V4L2_CAP_META_CAPTURE | V4L2_CAP_META_OUTPUT)) {
+		char aux[sizeof(vdev->name)];
+
+		snprintf(aux, sizeof(aux), "Meta: %s", vdev->name);
+		strscpy(vdev->name, aux, sizeof(aux));
+	}
+
 	/* v4l2_fh support */
 	spin_lock_init(&vdev->fh_lock);
 	INIT_LIST_HEAD(&vdev->fh_list);
