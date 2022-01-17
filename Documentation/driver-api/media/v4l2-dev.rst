@@ -42,7 +42,9 @@ You should also set these fields of :c:type:`video_device`:
 - :c:type:`video_device`->v4l2_dev: must be set to the :c:type:`v4l2_device`
   parent device.
 
-- :c:type:`video_device`->name: set to something descriptive and unique.
+- :c:type:`video_device`->name: set to something descriptive and unique. If the
+  device has the `V4L2_CAP_META_CAPTURE` or `V4L2_CAP_META_OUTPUT` capabilities,
+  the string `Meta:` will be inserted before the original name.
 
 - :c:type:`video_device`->vfl_dir: set this to ``VFL_DIR_RX`` for capture
   devices (``VFL_DIR_RX`` has value 0, so this is normally already the
