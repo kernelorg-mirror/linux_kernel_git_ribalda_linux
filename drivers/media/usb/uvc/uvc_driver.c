@@ -1920,6 +1920,7 @@ static void uvc_unregister_video(struct uvc_device *dev)
 
 int uvc_register_video_device(struct uvc_device *dev,
 			      struct uvc_streaming *stream,
+			      unsigned int index,
 			      struct video_device *vdev,
 			      struct uvc_video_queue *queue,
 			      enum v4l2_buf_type type,
@@ -1963,7 +1964,14 @@ int uvc_register_video_device(struct uvc_device *dev,
 		break;
 	}
 
-	strscpy(vdev->name, dev->name, sizeof(vdev->name));
+	if (index) {
+		snprintf(vdev->name, sizeof(vdev->name), "%s_%u%s", dev->name,
+			 index,
+			 type == V4L2_BUF_TYPE_META_CAPTURE ? "-Meta" : "");
+	} else {
+		snprintf(vdev->name, sizeof(vdev->name), "%s%s", dev->name,
+			 type == V4L2_BUF_TYPE_META_CAPTURE ? "-Meta" : "");
+	}
 
 	/*
 	 * Set the driver data before calling video_register_device, otherwise
@@ -1984,7 +1992,8 @@ int uvc_register_video_device(struct uvc_device *dev,
 }
 
 static int uvc_register_video(struct uvc_device *dev,
-		struct uvc_streaming *stream)
+			      struct uvc_streaming *stream,
+			      unsigned int index)
 {
 	int ret;
 
@@ -2005,7 +2014,7 @@ static int uvc_register_video(struct uvc_device *dev,
 	uvc_debugfs_init_stream(stream);
 
 	/* Register the device with V4L. */
-	return uvc_register_video_device(dev, stream, &stream->vdev,
+	return uvc_register_video_device(dev, stream, index, &stream->vdev,
 					 &stream->queue, stream->type,
 					 &uvc_fops, &uvc_ioctl_ops);
 }
@@ -2018,6 +2027,7 @@ static int uvc_register_terms(struct uvc_device *dev,
 {
 	struct uvc_streaming *stream;
 	struct uvc_entity *term;
+	unsigned int index = 0;
 	int ret;
 
 	list_for_each_entry(term, &chain->entities, chain) {
@@ -2033,7 +2043,7 @@ static int uvc_register_terms(struct uvc_device *dev,
 		}
 
 		stream->chain = chain;
-		ret = uvc_register_video(dev, stream);
+		ret = uvc_register_video(dev, stream, index);
 		if (ret < 0)
 			return ret;
 
@@ -2041,9 +2051,10 @@ static int uvc_register_terms(struct uvc_device *dev,
 		 * Register a metadata node, but ignore a possible failure,
 		 * complete registration of video nodes anyway.
 		 */
-		uvc_meta_register(stream);
+		uvc_meta_register(stream, index);
 
 		term->vdev = &stream->vdev;
+		index += 1;
 	}
 
 	return 0;
