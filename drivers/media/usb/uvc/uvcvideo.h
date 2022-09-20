@@ -584,6 +584,7 @@ struct uvc_fh {
 	struct uvc_video_chain *chain;
 	struct uvc_streaming *stream;
 	enum uvc_handle_state state;
+	bool is_streaming;
 };
 
 struct uvc_driver {
