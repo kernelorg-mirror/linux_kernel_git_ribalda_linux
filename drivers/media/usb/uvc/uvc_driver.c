@@ -1267,7 +1267,7 @@ static int uvc_gpio_parse(struct uvc_device *dev)
 
 	irq = gpiod_to_irq(gpio_privacy);
 	if (irq < 0) {
-		if (irq != EPROBE_DEFER)
+		if (irq != -EPROBE_DEFER)
 			dev_err(&dev->udev->dev,
 				"No IRQ for privacy GPIO (%d)\n", irq);
 		return irq;
