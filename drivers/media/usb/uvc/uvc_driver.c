@@ -1847,7 +1847,8 @@ static void uvc_delete(struct kref *kref)
 	struct uvc_device *dev = container_of(kref, struct uvc_device, ref);
 	struct list_head *p, *n;
 
-	uvc_status_cleanup(dev);
+	if (dev->int_ep)
+		uvc_status_cleanup(dev);
 	uvc_ctrl_cleanup_device(dev);
 
 	usb_put_intf(dev->intf);
@@ -1918,7 +1919,8 @@ static void uvc_unregister_video(struct uvc_device *dev)
 		mutex_unlock(&stream->mutex);
 	}
 
-	uvc_status_unregister(dev);
+	if (dev->int_ep)
+		uvc_status_unregister(dev);
 	uvc_ctrl_stop_device(dev);
 
 	if (dev->vdev.dev)
@@ -2222,7 +2224,9 @@ static int uvc_probe(struct usb_interface *intf,
 	usb_set_intfdata(intf, dev);
 
 	/* Initialize the interrupt URB. */
-	if ((ret = uvc_status_init(dev)) < 0) {
+	if (dev->int_ep)
+		ret = uvc_status_init(dev);
+	if (ret < 0) {
 		dev_info(&dev->udev->dev,
 			 "Unable to initialize the status endpoint (%d), status interrupt will not be supported.\n",
 			 ret);
@@ -2274,6 +2278,8 @@ static int uvc_suspend(struct usb_interface *intf, pm_message_t message)
 	/* Controls are cached on the fly so they don't need to be saved. */
 	if (intf->cur_altsetting->desc.bInterfaceSubClass ==
 	    UVC_SC_VIDEOCONTROL) {
+		if (!dev->int_ep)
+			return 0;
 		mutex_lock(&dev->lock);
 		if (dev->users)
 			uvc_status_stop(dev);
@@ -2307,6 +2313,9 @@ static int __uvc_resume(struct usb_interface *intf, int reset)
 			if (ret < 0)
 				return ret;
 		}
+
+		if (!dev->int_ep)
+			return ret;
 
 		mutex_lock(&dev->lock);
 		if (dev->users)
