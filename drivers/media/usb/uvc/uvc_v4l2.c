@@ -37,6 +37,9 @@ static int uvc_pm_get(struct uvc_streaming *stream)
 	if (ret)
 		return ret;
 
+	if (!stream->dev->int_ep)
+		return 0;
+
 	mutex_lock(&stream->dev->lock);
 	if (!stream->dev->users)
 		ret = uvc_status_start(stream->dev, GFP_KERNEL);
@@ -52,6 +55,9 @@ static int uvc_pm_get(struct uvc_streaming *stream)
 
 static void uvc_pm_put(struct uvc_streaming *stream)
 {
+	if (!stream->dev->int_ep)
+		goto done;
+
 	mutex_lock(&stream->dev->lock);
 	if (WARN_ON(!stream->dev->users)) {
 		mutex_unlock(&stream->dev->lock);
@@ -62,6 +68,7 @@ static void uvc_pm_put(struct uvc_streaming *stream)
 		uvc_status_stop(stream->dev);
 	mutex_unlock(&stream->dev->lock);
 
+done:
 	usb_autopm_put_interface(stream->dev->intf);
 }
 

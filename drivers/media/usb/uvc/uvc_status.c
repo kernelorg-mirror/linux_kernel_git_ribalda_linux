@@ -277,7 +277,7 @@ int uvc_status_init(struct uvc_device *dev)
 	unsigned int pipe;
 	int interval;
 
-	if (ep == NULL)
+	if (WARN_ON(!ep))
 		return 0;
 
 	uvc_input_init(dev);
@@ -312,19 +312,23 @@ int uvc_status_init(struct uvc_device *dev)
 
 void uvc_status_unregister(struct uvc_device *dev)
 {
+	if (WARN_ON(!dev->int_ep))
+		return;
 	usb_kill_urb(dev->int_urb);
 	uvc_input_unregister(dev);
 }
 
 void uvc_status_cleanup(struct uvc_device *dev)
 {
+	if (WARN_ON(!dev->int_ep))
+		return;
 	usb_free_urb(dev->int_urb);
 	kfree(dev->status);
 }
 
 int uvc_status_start(struct uvc_device *dev, gfp_t flags)
 {
-	if (dev->int_urb == NULL)
+	if (WARN_ON(!dev->int_ep) || !dev->int_urb)
 		return 0;
 
 	return usb_submit_urb(dev->int_urb, flags);
@@ -332,5 +336,8 @@ int uvc_status_start(struct uvc_device *dev, gfp_t flags)
 
 void uvc_status_stop(struct uvc_device *dev)
 {
+	if (WARN_ON(!dev->int_ep) || !dev->int_urb)
+		return;
+
 	usb_kill_urb(dev->int_urb);
 }
