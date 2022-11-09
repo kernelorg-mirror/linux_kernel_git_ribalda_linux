@@ -326,6 +326,8 @@ struct i2c_driver {
  *	calls it to pass on slave events to the slave driver.
  * @devres_group_id: id of the devres group that will be created for resources
  *	acquired when probing this device.
+ * @turn_off_on_remove: Record if we have turned on the device before probing
+ *	so we can turn off the device at removal.
  *
  * An i2c_client identifies a single device (i.e. chip) connected to an
  * i2c bus. The behaviour exposed to Linux is defined by the driver
@@ -355,6 +357,8 @@ struct i2c_client {
 	i2c_slave_cb_t slave_cb;	/* callback for slave mode	*/
 #endif
 	void *devres_group_id;		/* ID of probe devres group	*/
+	bool turn_off_on_remove;	/* if device needs to be turned	*/
+					/* off by framework at removal	*/
 };
 #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 
