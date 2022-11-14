@@ -462,6 +462,17 @@ altered.
 Generally used together with the `modules_disabled`_ sysctl.
 
 
+kexec_reboot_disabled
+=====================
+
+A toggle indicating if ``LINUX_REBOOT_CMD_KEXEC`` has been disabled.
+This value defaults to 0 (false: ``LINUX_REBOOT_CMD_KEXEC`` enabled),
+but can be set to 1 (true: ``LINUX_REBOOT_CMD_KEXEC`` disabled).
+Once true, kexec can no longer be used for reboot and the toggle
+cannot be set back to false.
+This toggle does not affect the use of kexec during a crash.
+
+
 kptr_restrict
 =============
 

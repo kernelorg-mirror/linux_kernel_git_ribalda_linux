@@ -929,11 +929,22 @@ int kimage_load_segment(struct kimage *image,
 struct kimage *kexec_image;
 struct kimage *kexec_crash_image;
 int kexec_load_disabled;
+int kexec_reboot_disabled;
 #ifdef CONFIG_SYSCTL
 static struct ctl_table kexec_core_sysctls[] = {
 	{
 		.procname	= "kexec_load_disabled",
 		.data		= &kexec_load_disabled,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		/* only handle a transition from default "0" to "1" */
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= SYSCTL_ONE,
+		.extra2		= SYSCTL_ONE,
+	},
+	{
+		.procname	= "kexec_reboot_disabled",
+		.data		= &kexec_reboot_disabled,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
 		/* only handle a transition from default "0" to "1" */
@@ -1138,7 +1149,7 @@ int kernel_kexec(void)
 
 	if (!kexec_trylock())
 		return -EBUSY;
-	if (!kexec_image) {
+	if (!kexec_image || kexec_reboot_disabled) {
 		error = -EINVAL;
 		goto Unlock;
 	}

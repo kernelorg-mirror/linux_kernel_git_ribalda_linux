@@ -196,6 +196,10 @@ static inline int kexec_load_check(unsigned long nr_segments,
 	if (!capable(CAP_SYS_BOOT) || kexec_load_disabled)
 		return -EPERM;
 
+	/* Check if the system admin has disabled kexec reboot. */
+	if (!(flags & KEXEC_ON_CRASH) && kexec_reboot_disabled)
+		return -EPERM;
+
 	/* Permit LSMs and IMA to fail the kexec */
 	result = security_kernel_load_data(LOADING_KEXEC_IMAGE, false);
 	if (result < 0)
