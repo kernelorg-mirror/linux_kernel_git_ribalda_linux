@@ -1004,6 +1004,11 @@ void crash_kexec(struct pt_regs *regs)
 	}
 }
 
+bool __crash_memory_valid(void)
+{
+	return crashk_res.end != crashk_res.start;
+}
+
 ssize_t crash_get_memory_size(void)
 {
 	ssize_t size = 0;
