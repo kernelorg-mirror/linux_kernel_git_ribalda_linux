@@ -427,6 +427,7 @@ extern int kexec_load_disabled;
 extern bool kexec_in_progress;
 
 int crash_shrink_memory(unsigned long new_size);
+bool __crash_memory_valid(void);
 ssize_t crash_get_memory_size(void);
 
 #ifndef arch_kexec_protect_crashkres

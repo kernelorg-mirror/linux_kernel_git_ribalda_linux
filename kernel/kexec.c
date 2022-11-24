@@ -28,7 +28,7 @@ static int kimage_alloc_init(struct kimage **rimage, unsigned long entry,
 	struct kimage *image;
 	bool kexec_on_panic = flags & KEXEC_ON_CRASH;
 
-	if (kexec_on_panic) {
+	if (kexec_on_panic && __crash_memory_valid()) {
 		/* Verify we have a valid entry point */
 		if ((entry < phys_to_boot_phys(crashk_res.start)) ||
 		    (entry > phys_to_boot_phys(crashk_res.end)))
@@ -44,7 +44,7 @@ static int kimage_alloc_init(struct kimage **rimage, unsigned long entry,
 	image->nr_segments = nr_segments;
 	memcpy(image->segment, segments, nr_segments * sizeof(*segments));
 
-	if (kexec_on_panic) {
+	if (kexec_on_panic && __crash_memory_valid()) {
 		/* Enable special crash kernel control page alloc policy. */
 		image->control_page = crashk_res.start;
 		image->type = KEXEC_TYPE_CRASH;
@@ -101,7 +101,7 @@ static int do_kexec_load(unsigned long entry, unsigned long nr_segments,
 
 	if (flags & KEXEC_ON_CRASH) {
 		dest_image = &kexec_crash_image;
-		if (kexec_crash_image)
+		if (kexec_crash_image && __crash_memory_valid())
 			arch_kexec_unprotect_crashkres();
 	} else {
 		dest_image = &kexec_image;
@@ -157,7 +157,8 @@ static int do_kexec_load(unsigned long entry, unsigned long nr_segments,
 	image = xchg(dest_image, image);
 
 out:
-	if ((flags & KEXEC_ON_CRASH) && kexec_crash_image)
+	if ((flags & KEXEC_ON_CRASH) && kexec_crash_image &&
+	    __crash_memory_valid())
 		arch_kexec_protect_crashkres();
 
 	kimage_free(image);

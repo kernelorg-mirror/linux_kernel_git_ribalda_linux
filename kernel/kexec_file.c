@@ -280,7 +280,7 @@ kimage_file_alloc_init(struct kimage **rimage, int kernel_fd,
 
 	image->file_mode = 1;
 
-	if (kexec_on_panic) {
+	if (kexec_on_panic && __crash_memory_valid()) {
 		/* Enable special crash kernel control page alloc policy. */
 		image->control_page = crashk_res.start;
 		image->type = KEXEC_TYPE_CRASH;
@@ -345,7 +345,7 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 	dest_image = &kexec_image;
 	if (flags & KEXEC_FILE_ON_CRASH) {
 		dest_image = &kexec_crash_image;
-		if (kexec_crash_image)
+		if (kexec_crash_image && __crash_memory_valid())
 			arch_kexec_unprotect_crashkres();
 	}
 
@@ -408,7 +408,8 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 exchange:
 	image = xchg(dest_image, image);
 out:
-	if ((flags & KEXEC_FILE_ON_CRASH) && kexec_crash_image)
+	if ((flags & KEXEC_FILE_ON_CRASH) && kexec_crash_image &&
+	    __crash_memory_valid())
 		arch_kexec_protect_crashkres();
 
 	kexec_unlock();
