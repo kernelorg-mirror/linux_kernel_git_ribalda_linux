@@ -120,7 +120,9 @@ static int __init parse_options(struct earlycon_device *device, char *options)
 	}
 
 	if (options) {
-		device->baud = simple_strtoul(options, NULL, 0);
+		if (kstrtouint(options, 0, &device->baud) < 0)
+			pr_warn("[%s] unsupported earlycon baud rate option\n",
+				options);
 		length = min(strcspn(options, " ") + 1,
 			     (size_t)(sizeof(device->options)));
 		strscpy(device->options, options, length);
@@ -303,7 +305,9 @@ int __init of_setup_earlycon(const struct earlycon_id *match,
 		port->uartclk = be32_to_cpu(*val);
 
 	if (options) {
-		early_console_dev.baud = simple_strtoul(options, NULL, 0);
+		if (kstrtouint(options, 0, &early_console_dev.baud) < 0)
+			pr_warn("[%s] unsupported earlycon baud rate options\n",
+				options);
 		strscpy(early_console_dev.options, options,
 			sizeof(early_console_dev.options));
 	}
