@@ -227,19 +227,29 @@ kimage_file_prepare_segments(struct kimage *image, int kernel_fd, int initrd_fd,
 	}
 
 	if (cmdline_len) {
-		image->cmdline_buf = memdup_user(cmdline_ptr, cmdline_len);
-		if (IS_ERR(image->cmdline_buf)) {
-			ret = PTR_ERR(image->cmdline_buf);
-			image->cmdline_buf = NULL;
+		char *aux =  memdup_user(cmdline_ptr, cmdline_len);
+		if (IS_ERR(aux)) {
+			ret = PTR_ERR(aux);
 			goto out;
 		}
 
-		image->cmdline_buf_len = cmdline_len;
-
 		/* command line should be a string with last byte null */
-		if (image->cmdline_buf[cmdline_len - 1] != '\0') {
+		if (aux[cmdline_len - 1] != '\0') {
 			ret = -EINVAL;
 			goto out;
+		}
+
+		if (flags & KEXEC_FILE_ON_CRASH && !__crash_memory_valid() && vmcoreinfo_data) {
+			image->cmdline_buf = kasprintf(GFP_KERNEL, "%s elfcorehdr=0x%lx", aux, virt_to_boot_phys(vmcoreinfo_data));
+			kfree(aux);
+			if (IS_ERR(image->cmdline_buf)) {
+				ret = PTR_ERR(aux);
+				goto out;
+			}
+			image->cmdline_buf_len = strlen(image->cmdline_buf) + 1;
+		} else  {
+			image->cmdline_buf = aux;
+			image->cmdline_buf_len = cmdline_len;
 		}
 
 		ima_kexec_cmdline(kernel_fd, image->cmdline_buf,
