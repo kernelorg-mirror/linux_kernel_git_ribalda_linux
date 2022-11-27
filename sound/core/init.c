@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/file.h>
+#include <linux/freezer.h>
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <linux/ctype.h>
@@ -573,6 +574,11 @@ void snd_card_disconnect_sync(struct snd_card *card)
 		return;
 	}
 
+	if (processes_frozen()) {
+		dev_err(card->dev, "Userspace is frozen, skipping sync\n");
+		return;
+	}
+
 	spin_lock_irq(&card->files_lock);
 	wait_event_lock_irq(card->remove_sleep,
 			    list_empty(&card->files_list),
@@ -658,6 +664,13 @@ int snd_card_free(struct snd_card *card)
 	ret = snd_card_free_when_closed(card);
 	if (ret)
 		return ret;
+
+	/*
+	 * If userspace is frozen the wait from completion will never end.
+	 */
+	if (processes_frozen())
+		return 0;
+
 	/* wait, until all devices are ready for the free operation */
 	wait_for_completion(&released);
 
