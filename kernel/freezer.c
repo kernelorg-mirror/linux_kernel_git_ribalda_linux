@@ -233,3 +233,14 @@ bool set_freezable(void)
 	return try_to_freeze();
 }
 EXPORT_SYMBOL(set_freezable);
+
+/**
+ * processes_frozen - Check if the processes are frozen
+ *
+ * Let drivers know if they shall wait for processes.
+ */
+bool processes_frozen(void)
+{
+	return pm_freezing;
+}
+EXPORT_SYMBOL(processes_frozen);
