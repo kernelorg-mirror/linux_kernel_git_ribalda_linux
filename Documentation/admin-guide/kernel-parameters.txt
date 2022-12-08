@@ -2374,6 +2374,20 @@
 			for Movable pages.  "nn[KMGTPE]", "nn%", and "mirror"
 			are exclusive, so you cannot specify multiple forms.
 
+	kexec_core.load_limit_reboot=
+	kexec_core.load_limit_panic=
+			[KNL]
+			This parameter specifies a limit to the number of times
+			a kexec kernel can be loaded.
+			Format: <int>
+			-1  = Unlimited.
+			int = Number of times kexec can be called.
+
+			During runtime, this parameter can be modified with a
+			value smaller than the current one (but not -1).
+
+			Default: -1
+
 	kgdbdbgp=	[KGDB,HW] kgdb over EHCI usb debug port.
 			Format: <Controller#>[,poll interval]
 			The controller # is the number of the ehci usb debug
