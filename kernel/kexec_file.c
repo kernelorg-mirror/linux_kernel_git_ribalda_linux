@@ -330,7 +330,7 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 	struct kimage **dest_image, *image;
 
 	/* We only trust the superuser with rebooting the system. */
-	if (!kexec_load_permited())
+	if (!kexec_load_permited(flags & KEXEC_FILE_FLAGS))
 		return -EPERM;
 
 	/* Make sure we have a legal set of flags */

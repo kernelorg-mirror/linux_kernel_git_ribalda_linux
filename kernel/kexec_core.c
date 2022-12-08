@@ -952,13 +952,100 @@ static int __init kexec_core_sysctl_init(void)
 late_initcall(kexec_core_sysctl_init);
 #endif
 
-bool kexec_load_permited(void)
+struct kexec_load_limit {
+	/* Mutex protects the limit count. */
+	struct mutex mutex;
+	int limit;
+};
+
+struct kexec_load_limit load_limit_reboot = {
+	.mutex = __MUTEX_INITIALIZER(load_limit_reboot.mutex),
+	.limit = -1,
+};
+
+struct kexec_load_limit load_limit_panic = {
+	.mutex = __MUTEX_INITIALIZER(load_limit_panic.mutex),
+	.limit = -1,
+};
+
+static int param_get_limit(char *buffer, const struct kernel_param *kp)
 {
+	int ret;
+	struct kexec_load_limit *limit = kp->arg;
+
+	mutex_lock(&limit->mutex);
+	ret = scnprintf(buffer, PAGE_SIZE, "%i\n", limit->limit);
+	mutex_unlock(&limit->mutex);
+
+	return ret;
+}
+
+static int param_set_limit(const char *buffer, const struct kernel_param *kp)
+{
+	int ret;
+	struct kexec_load_limit *limit = kp->arg;
+	int new_val;
+
+	ret = kstrtoint(buffer, 0, &new_val);
+	if (ret)
+		return ret;
+
+	new_val = max(-1, new_val);
+
+	mutex_lock(&limit->mutex);
+
+	if (new_val == -1 && limit->limit != -1) {
+		ret = -EINVAL;
+		goto done;
+	}
+
+	if (limit->limit != -1 && new_val > limit->limit) {
+		ret = -EINVAL;
+		goto done;
+	}
+
+	limit->limit = new_val;
+
+done:
+	mutex_unlock(&limit->mutex);
+
+	return ret;
+}
+
+static const struct kernel_param_ops load_limit_ops = {
+	.get = param_get_limit,
+	.set = param_set_limit,
+};
+
+module_param_cb(load_limit_reboot, &load_limit_ops, &load_limit_reboot, 0644);
+MODULE_PARM_DESC(load_limit_reboot, "Maximum attempts to load a kexec reboot kernel");
+
+module_param_cb(load_limit_panic, &load_limit_ops, &load_limit_panic, 0644);
+MODULE_PARM_DESC(load_limit_reboot, "Maximum attempts to load a kexec panic kernel");
+
+bool kexec_load_permited(bool crash_image)
+{
+	struct kexec_load_limit *limit;
+
 	/*
 	 * Only the superuser can use the kexec syscall and if it has not
 	 * been disabled.
 	 */
-	return capable(CAP_SYS_BOOT) && !kexec_load_disabled;
+	if (!capable(CAP_SYS_BOOT) || kexec_load_disabled)
+		return false;
+
+	/* Check limit counter and decrease it.*/
+	limit = crash_image ? &load_limit_panic : &load_limit_reboot;
+	mutex_lock(&limit->mutex);
+	if (!limit->limit) {
+		mutex_unlock(&limit->mutex);
+		return false;
+	}
+	if (limit->limit != -1)
+		limit->limit--;
+	mutex_unlock(&limit->mutex);
+
+	return true;
 }
 
 /*
