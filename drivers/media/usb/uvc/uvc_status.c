@@ -6,6 +6,7 @@
  *          Laurent Pinchart (laurent.pinchart@ideasonboard.com)
  */
 
+#include <asm/barrier.h>
 #include <linux/kernel.h>
 #include <linux/input.h>
 #include <linux/slab.h>
@@ -309,5 +310,40 @@ int uvc_status_start(struct uvc_device *dev, gfp_t flags)
 
 void uvc_status_stop(struct uvc_device *dev)
 {
+	struct uvc_ctrl_work *w = &dev->async_ctrl;
+
+	/* From this point, the status urb is not re-queued */
+	dev->flush_status = 1;
+	/*
+	 * Make sure that the other CPUs are aware of the new value of
+	 * flush_status.
+	 */
+	smp_mb();
+
+	/* If there is any status event on the queue, process it. */
+	if (cancel_work_sync(&w->work))
+		uvc_ctrl_status_event(w->chain, w->ctrl, w->data);
+
+	/* Kill the urb. */
 	usb_kill_urb(dev->int_urb);
+
+	/*
+	 * If an status event was queued between cancel_work_sync() and
+	 * usb_kill_urb(), process it.
+	 */
+	if (cancel_work_sync(&w->work))
+		uvc_ctrl_status_event(w->chain, w->ctrl, w->data);
+
+	/*
+	 * From this point, there are no events on the queue and the status urb
+	 * is dead, this is, no events will be queued until uvc_status_start()
+	 * is called.
+	 */
+	dev->flush_status = 0;
+	/*
+	 * Write to memory the value of flush_status before uvc_status_start()
+	 * is called again,
+	 */
+	smp_mb();
+
 }
