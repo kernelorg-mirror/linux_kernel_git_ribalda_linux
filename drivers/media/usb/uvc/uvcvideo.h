@@ -539,6 +539,8 @@ struct uvc_device {
 
 	struct mutex lock;		/* Protects users */
 	unsigned int users;
+	bool resubmit_urb;
+
 	atomic_t nmappings;
 
 	/* Video control interface */

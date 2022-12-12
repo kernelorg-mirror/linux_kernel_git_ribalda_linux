@@ -310,4 +310,5 @@ int uvc_status_start(struct uvc_device *dev, gfp_t flags)
 void uvc_status_stop(struct uvc_device *dev)
 {
 	usb_kill_urb(dev->int_urb);
+	dev->resubmit_urb = false;
 }

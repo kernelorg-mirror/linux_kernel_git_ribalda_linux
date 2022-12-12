@@ -1442,12 +1442,20 @@ static void uvc_ctrl_status_event_work(struct work_struct *work)
 
 	uvc_ctrl_status_event(w->chain, w->ctrl, w->data);
 
+	mutex_lock(&dev->lock);
+	if (!dev->users || !dev->resubmit_urb) {
+		mutex_unlock(&dev->lock);
+		return;
+	}
+
 	/* Resubmit the URB. */
 	w->urb->interval = dev->int_ep->desc.bInterval;
 	ret = usb_submit_urb(w->urb, GFP_KERNEL);
 	if (ret < 0)
 		dev_err(&dev->udev->dev,
 			"Failed to resubmit status URB (%d).\n", ret);
+	dev->resubmit_urb = false;
+	mutex_unlock(&dev->lock);
 }
 
 bool uvc_ctrl_status_event_async(struct urb *urb, struct uvc_video_chain *chain,
@@ -1466,6 +1474,7 @@ bool uvc_ctrl_status_event_async(struct urb *urb, struct uvc_video_chain *chain,
 	w->chain = chain;
 	w->ctrl = ctrl;
 
+	dev->resubmit_urb = true;
 	schedule_work(&w->work);
 
 	return true;
