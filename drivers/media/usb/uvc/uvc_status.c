@@ -259,15 +259,9 @@ int uvc_status_init(struct uvc_device *dev)
 
 	uvc_input_init(dev);
 
-	dev->status = kzalloc(UVC_MAX_STATUS_SIZE, GFP_KERNEL);
-	if (dev->status == NULL)
-		return -ENOMEM;
-
 	dev->int_urb = usb_alloc_urb(0, GFP_KERNEL);
-	if (dev->int_urb == NULL) {
-		kfree(dev->status);
+	if (!dev->int_urb)
 		return -ENOMEM;
-	}
 
 	pipe = usb_rcvintpipe(dev->udev, ep->desc.bEndpointAddress);
 
@@ -296,7 +290,6 @@ void uvc_status_unregister(struct uvc_device *dev)
 void uvc_status_cleanup(struct uvc_device *dev)
 {
 	usb_free_urb(dev->int_urb);
-	kfree(dev->status);
 }
 
 int uvc_status_start(struct uvc_device *dev, gfp_t flags)

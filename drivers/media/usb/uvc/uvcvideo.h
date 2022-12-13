@@ -559,7 +559,7 @@ struct uvc_device {
 	/* Status Interrupt Endpoint */
 	struct usb_host_endpoint *int_ep;
 	struct urb *int_urb;
-	u8 *status;
+	u8 status[UVC_MAX_STATUS_SIZE];
 	bool flush_status;
 	struct input_dev *input;
 	char input_phys[64];
