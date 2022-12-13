@@ -200,22 +200,22 @@ static void uvc_status_complete(struct urb *urb)
 
 	len = urb->actual_length;
 	if (len > 0) {
-		switch (dev->status->bStatusType & 0x0f) {
+		switch (dev->status.bStatusType & 0x0f) {
 		case UVC_STATUS_TYPE_CONTROL: {
-			if (uvc_event_control(urb, dev->status, len))
+			if (uvc_event_control(urb, &dev->status, len))
 				/* The URB will be resubmitted in work context. */
 				return;
 			break;
 		}
 
 		case UVC_STATUS_TYPE_STREAMING: {
-			uvc_event_streaming(dev, dev->status, len);
+			uvc_event_streaming(dev, &dev->status, len);
 			break;
 		}
 
 		default:
 			uvc_dbg(dev, STATUS, "Unknown status event type %u\n",
-				dev->status->bStatusType);
+				dev->status.bStatusType);
 			break;
 		}
 	}
@@ -239,15 +239,9 @@ int uvc_status_init(struct uvc_device *dev)
 
 	uvc_input_init(dev);
 
-	dev->status = kzalloc(sizeof(*dev->status), GFP_KERNEL);
-	if (dev->status == NULL)
-		return -ENOMEM;
-
 	dev->int_urb = usb_alloc_urb(0, GFP_KERNEL);
-	if (!dev->int_urb) {
-		kfree(dev->status);
+	if (!dev->int_urb)
 		return -ENOMEM;
-	}
 
 	pipe = usb_rcvintpipe(dev->udev, ep->desc.bEndpointAddress);
 
@@ -261,7 +255,7 @@ int uvc_status_init(struct uvc_device *dev)
 		interval = fls(interval) - 1;
 
 	usb_fill_int_urb(dev->int_urb, dev->udev, pipe,
-		dev->status, sizeof(dev->status), uvc_status_complete,
+		&dev->status, sizeof(dev->status), uvc_status_complete,
 		dev, interval);
 
 	return 0;
@@ -276,7 +270,6 @@ void uvc_status_unregister(struct uvc_device *dev)
 void uvc_status_cleanup(struct uvc_device *dev)
 {
 	usb_free_urb(dev->int_urb);
-	kfree(dev->status);
 }
 
 int uvc_status_start(struct uvc_device *dev, gfp_t flags)

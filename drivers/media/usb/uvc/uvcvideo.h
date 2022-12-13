@@ -577,7 +577,11 @@ struct uvc_device {
 	/* Status Interrupt Endpoint */
 	struct usb_host_endpoint *int_ep;
 	struct urb *int_urb;
-	struct uvc_status *status;
+	/*
+	 * Ensure that status is aligned, making it safe to use with
+	 * non-coherent DMA.
+	 */
+	struct uvc_status status __aligned(ARCH_KMALLOC_MINALIGN);
 
 	struct input_dev *input;
 	char input_phys[64];
