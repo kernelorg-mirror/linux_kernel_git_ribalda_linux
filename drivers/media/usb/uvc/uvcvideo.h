@@ -527,6 +527,26 @@ struct uvc_device_info {
 	const struct uvc_control_mapping **mappings;
 };
 
+struct uvc_status_streaming {
+	u8	button;
+} __packed;
+
+struct uvc_status_control {
+	u8	bSelector;
+	u8	bAttribute;
+	u8	bValue[11];
+} __packed;
+
+struct uvc_status {
+	u8	bStatusType;
+	u8	bOriginator;
+	u8	bEvent;
+	union {
+		struct uvc_status_control control;
+		struct uvc_status_streaming streaming;
+	};
+} __packed;
+
 struct uvc_device {
 	struct usb_device *udev;
 	struct usb_interface *intf;
@@ -559,7 +579,7 @@ struct uvc_device {
 	/* Status Interrupt Endpoint */
 	struct usb_host_endpoint *int_ep;
 	struct urb *int_urb;
-	u8 *status;
+	struct uvc_status status;
 	struct input_dev *input;
 	char input_phys[64];
 
