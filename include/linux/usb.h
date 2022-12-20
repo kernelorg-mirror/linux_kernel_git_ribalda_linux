@@ -1627,13 +1627,20 @@ struct urb {
  * @dev: pointer to the struct usb_device for this urb.
  * @pipe: the endpoint pipe
  * @setup_packet: pointer to the setup_packet buffer
- * @transfer_buffer: pointer to the transfer buffer
+ * @transfer_buffer: pointer to the transfer buffer. Must be suitable for DMA.
  * @buffer_length: length of the transfer buffer
  * @complete_fn: pointer to the usb_complete_t function
  * @context: what to set the urb context to.
  *
  * Initializes a control urb with the proper information needed to submit
  * it to a device.
+ *
+ * The transfer buffer might be filled via DMA. The simplest way to get
+ * a buffer that can be DMAed to, is allocating it via kmalloc() or
+ * equivalent, even for very small buffers. If transfer_buffer is embedded
+ * in a bigger structure, there is a risk that the previous and following
+ * fields are left in a corrupted state by the DMA engine, if the platform
+ * is not cache coherent.
  */
 static inline void usb_fill_control_urb(struct urb *urb,
 					struct usb_device *dev,
@@ -1658,13 +1665,20 @@ static inline void usb_fill_control_urb(struct urb *urb,
  * @urb: pointer to the urb to initialize.
  * @dev: pointer to the struct usb_device for this urb.
  * @pipe: the endpoint pipe
- * @transfer_buffer: pointer to the transfer buffer
+ * @transfer_buffer: pointer to the transfer buffer. Must be suitable for DMA.
  * @buffer_length: length of the transfer buffer
  * @complete_fn: pointer to the usb_complete_t function
  * @context: what to set the urb context to.
  *
  * Initializes a bulk urb with the proper information needed to submit it
  * to a device.
+ *
+ * The transfer buffer might be filled via DMA. The simplest way to get
+ * a buffer that can be DMAed to, is allocating it via kmalloc() or
+ * equivalent, even for very small buffers. If transfer_buffer is embedded
+ * in a bigger structure, there is a risk that the previous and following
+ * fields are left in a corrupted state by the DMA engine, if the platform
+ * is not cache coherent.
  */
 static inline void usb_fill_bulk_urb(struct urb *urb,
 				     struct usb_device *dev,
@@ -1687,7 +1701,7 @@ static inline void usb_fill_bulk_urb(struct urb *urb,
  * @urb: pointer to the urb to initialize.
  * @dev: pointer to the struct usb_device for this urb.
  * @pipe: the endpoint pipe
- * @transfer_buffer: pointer to the transfer buffer
+ * @transfer_buffer: pointer to the transfer buffer. Must be suitable for DMA.
  * @buffer_length: length of the transfer buffer
  * @complete_fn: pointer to the usb_complete_t function
  * @context: what to set the urb context to.
@@ -1696,6 +1710,13 @@ static inline void usb_fill_bulk_urb(struct urb *urb,
  *
  * Initializes a interrupt urb with the proper information needed to submit
  * it to a device.
+ *
+ * The transfer buffer might be filled via DMA. The simplest way to get
+ * a buffer that can be DMAed to, is allocating it via kmalloc() or
+ * equivalent, even for very small buffers. If transfer_buffer is embedded
+ * in a bigger structure, there is a risk that the previous and following
+ * fields are left in a corrupted state by the DMA engine, if the platform
+ * is not cache coherent.
  *
  * Note that High Speed and SuperSpeed(+) interrupt endpoints use a logarithmic
  * encoding of the endpoint interval, and express polling intervals in
