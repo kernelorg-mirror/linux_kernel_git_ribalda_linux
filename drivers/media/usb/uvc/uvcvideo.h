@@ -252,7 +252,7 @@ struct uvc_frame {
 	u8  bFrameIntervalType;
 	u32 dwDefaultFrameInterval;
 	u32 *dwFrameInterval;
-};
+} __aligned(sizeof(void *)); /* uvc_frame is packed on streaming->formats. */
 
 struct uvc_format {
 	u8 type;
@@ -266,7 +266,7 @@ struct uvc_format {
 
 	unsigned int nframes;
 	struct uvc_frame *frame;
-};
+} __aligned(sizeof(void *)); /* uvc_format is packed on streaming->formats. */
 
 struct uvc_streaming_header {
 	u8 bNumFormats;
